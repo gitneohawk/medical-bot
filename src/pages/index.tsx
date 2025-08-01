@@ -9,12 +9,14 @@ export default function Home() {
   const [isRecording, setIsRecording] = useState(false);
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface ISpeechRecognition extends EventTarget {
   lang: string;
   interimResults: boolean;
   maxAlternatives: number;
   start: () => void;
   stop: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onresult: ((event: any) => void) | null;
   onend: (() => void) | null;
 }
@@ -27,6 +29,7 @@ const recognitionRef = useRef<ISpeechRecognition | null>(null);
 
   // 音声認識開始
   const startRecognition = () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SpeechRecognitionClass =
       (window as any).webkitSpeechRecognition ||
       (window as any).SpeechRecognition as { new (): ISpeechRecognition };
@@ -41,6 +44,7 @@ const recognitionRef = useRef<ISpeechRecognition | null>(null);
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
       setInput((prev) => prev + (prev ? " " : "") + transcript);
@@ -93,6 +97,7 @@ const recognitionRef = useRef<ISpeechRecognition | null>(null);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((e.nativeEvent as any).isComposing) return;
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
