@@ -1,115 +1,193 @@
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+"use client";
+import { useState, useEffect, useRef } from "react";
+import { PaperAirplaneIcon, UserCircleIcon, CpuChipIcon, MicrophoneIcon } from "@heroicons/react/24/solid";
 
 export default function Home() {
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const chatBottomRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  let recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // 音声認識開始
+  const startRecognition = () => {
+    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("お使いのブラウザは音声認識に対応していません");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "ja-JP";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setInput((prev) => prev + (prev ? " " : "") + transcript);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsRecording(true);
+  };
+
+  const handleSubmit = async () => {
+    if (!input.trim() || isLoading) return;
+    const userInput = input;
+
+    // 先に表示
+    const newMessages = [...messages, { role: "user", content: userInput }];
+    setMessages(newMessages);
+    setInput("");
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: userInput,
+          history: newMessages,
+        }),
+      });
+      if (!res.ok) throw new Error("AIからの応答取得に失敗しました。");
+      const data = await res.json();
+      setMessages([...newMessages, { role: "assistant", content: data.reply }]);
+    } catch (e) {
+      console.error("Error during chat:", e);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "エラーが発生しました。時間をおいて再度お試しください。" },
+      ]);
+    } finally {
+      setIsLoading(false);
+      // フォーカスを戻す
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.nativeEvent as any).isComposing) return;
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
+  const lastMessage = messages.length > 0 ? messages[messages.length - 1].content : "";
+
   return (
-    <div
-      className={`${geistSans.className} ${geistMono.className} font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20`}
-    >
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/pages/index.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <main className="flex flex-col h-screen max-w-4xl mx-auto">
+      {/* ヘッダー */}
+      <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-white shadow-sm">
+        <div className="flex items-center gap-4">
+          <img src="/logo.png" alt="病院ロゴ" className="h-14" />
+          <span className="text-lg font-semibold text-gray-700">AI健康相談（PoC）</span>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </div>
+
+      {/* 注意事項 */}
+      <div className="bg-yellow-50 border-b border-yellow-200 text-yellow-800 p-3 text-sm">
+        このAIは健康に関する一般的なアドバイスを提供しますが、正確性を保証するものではありません。症状がある場合は必ず医師の診察を受けてください。
+      </div>
+
+      {/* チャットエリア */}
+      <div className="flex-1 bg-white flex flex-col">
+        <div className="flex-1 p-6 space-y-6 overflow-y-auto">
+          {messages.map((m, idx) => (
+            <div
+              key={idx}
+              className={`flex items-end gap-3 ${m.role === "user" ? "flex-row-reverse" : ""}`}
+            >
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center">
+                {m.role === "user" ? (
+                  <UserCircleIcon className="h-6 w-6 text-slate-500" />
+                ) : (
+                  <CpuChipIcon className="h-6 w-6 text-blue-600" />
+                )}
+              </div>
+              <div
+                className={`max-w-lg p-3 rounded-lg text-sm whitespace-pre-wrap shadow-sm ${
+                  m.role === "user"
+                    ? "bg-blue-600 text-white rounded-br-none"
+                    : "bg-slate-100 text-slate-800 rounded-bl-none"
+                }`}
+              >
+                {m.content}
+              </div>
+            </div>
+          ))}
+          {isLoading && (
+            <div className="flex items-end gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center">
+                <CpuChipIcon className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="max-w-lg p-3 rounded-lg text-sm bg-slate-100 text-slate-400 rounded-bl-none shadow-sm">
+                <span className="animate-pulse">考え中...</span>
+              </div>
+            </div>
+          )}
+          <div ref={chatBottomRef} />
+        </div>
+        {/(人間ドック|健診)/.test(lastMessage) && (
+          <div className="p-4">
+            <a
+              href="https://www.tdhospital.jp/reservation"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              健診・人間ドックを予約する
+            </a>
+          </div>
+        )}
+
+        {/* 入力エリア */}
+        <div className="p-4 bg-white border-t border-slate-200">
+          <div className="flex items-center gap-2 p-1 border border-slate-300 rounded-lg focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-200 transition-all">
+            <textarea
+              ref={inputRef}
+              readOnly={isLoading}
+              className="flex-1 resize-none bg-transparent focus:outline-none p-2"
+              rows={3}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={isLoading ? "AIが回答中です..." : "メッセージを入力...(Shift+Enterで改行)"}
+            />
+            <button
+              onClick={startRecognition}
+              disabled={isLoading}
+              className={`h-10 w-10 flex-shrink-0 rounded-md flex items-center justify-center transition-colors ${
+                isRecording ? "bg-red-500 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              }`}
+              title="音声入力"
+            >
+              <MicrophoneIcon className="h-5 w-5" />
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={!input.trim() || isLoading}
+              className="h-10 w-10 flex-shrink-0 bg-blue-600 text-white rounded-md disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-700 flex items-center justify-center transition-colors"
+            >
+              <PaperAirplaneIcon className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }
