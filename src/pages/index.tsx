@@ -9,7 +9,17 @@ export default function Home() {
   const [isRecording, setIsRecording] = useState(false);
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
-  let recognitionRef = useRef<any>(null);
+interface ISpeechRecognition extends EventTarget {
+  lang: string;
+  interimResults: boolean;
+  maxAlternatives: number;
+  start: () => void;
+  stop: () => void;
+  onresult: ((event: any) => void) | null;
+  onend: (() => void) | null;
+}
+
+const recognitionRef = useRef<ISpeechRecognition | null>(null);
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -17,13 +27,16 @@ export default function Home() {
 
   // 音声認識開始
   const startRecognition = () => {
-    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-    if (!SpeechRecognition) {
+    const SpeechRecognitionClass =
+      (window as any).webkitSpeechRecognition ||
+      (window as any).SpeechRecognition as { new (): ISpeechRecognition };
+
+    if (!SpeechRecognitionClass) {
       alert("お使いのブラウザは音声認識に対応していません");
       return;
     }
 
-    const recognition = new SpeechRecognition();
+    const recognition = new SpeechRecognitionClass();
     recognition.lang = "ja-JP";
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
