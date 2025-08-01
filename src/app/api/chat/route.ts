@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export async function POST(req: NextRequest) {
   const { message, history } = await req.json();
 
@@ -29,6 +25,13 @@ export async function POST(req: NextRequest) {
     ...(history || []),
     { role: "user", content: message },
   ];
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY is missing");
+  }
+
+  const client = new OpenAI({ apiKey });
 
   const completion = await client.chat.completions.create({
     model: "gpt-4o",
