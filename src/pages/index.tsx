@@ -27,9 +27,13 @@ const recognitionRef = useRef<ISpeechRecognition | null>(null);
 
   // 音声認識開始
   const startRecognition = () => {
-    const SpeechRecognitionClass =
-      (window as any).webkitSpeechRecognition ||
-      (window as any).SpeechRecognition as { new (): ISpeechRecognition };
+    const SpeechRecognitionClass = (() => {
+      const w = window as unknown as {
+        webkitSpeechRecognition?: { new (): ISpeechRecognition };
+        SpeechRecognition?: { new (): ISpeechRecognition };
+      };
+      return w.webkitSpeechRecognition || w.SpeechRecognition;
+    })();
 
     if (!SpeechRecognitionClass) {
       alert("お使いのブラウザは音声認識に対応していません");
