@@ -1,10 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
+// src/pages/api/chat.ts
+import type { NextApiRequest, NextApiResponse } from 'next';
+import OpenAI from 'openai';
 
-export async function POST(req: NextRequest) {
-  const { message, history } = await req.json();
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
-  const openaiMessages = [
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+
+  try {
+    const { message, history } = req.body;
+
+  const messages = [
     {
       role: "system",
       content: `あなたは病院公式のオンライン健康相談AIです。
@@ -35,10 +46,13 @@ export async function POST(req: NextRequest) {
 
   const completion = await client.chat.completions.create({
     model: "gpt-4o",
-    messages: openaiMessages,
+    messages,
   });
 
-  return NextResponse.json({
-    reply: completion.choices[0].message.content,
-  });
+    const reply = completion.choices[0].message?.content || 'No reply';
+    res.status(200).json({ reply });
+  } catch (err: any) {
+    console.error('API error:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 }
