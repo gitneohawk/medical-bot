@@ -32,6 +32,9 @@ jobs:
                const coredemo = require('@actions/core')
                return await coredemo.getIDToken()
            result-encoding: string
+      - name: Clean .next cache
+        run: rm -rf .next/cache
+
       - name: Build
         run: |
           npm ci
