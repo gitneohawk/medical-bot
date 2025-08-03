@@ -19,48 +19,48 @@ interface ISpeechRecognition extends EventTarget {
   onend: (() => void) | null;
 }
 
-// const recognitionRef = useRef<ISpeechRecognition | null>(null);
+const recognitionRef = useRef<ISpeechRecognition | null>(null);
 
-//   useEffect(() => {
-//     chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
-//   }, [messages]);
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-//   // 音声認識開始
-//   const startRecognition = () => {
-//     const SpeechRecognitionClass = (() => {
-//       const w = window as unknown as {
-//         webkitSpeechRecognition?: { new (): ISpeechRecognition };
-//         SpeechRecognition?: { new (): ISpeechRecognition };
-//       };
-//       return w.webkitSpeechRecognition || w.SpeechRecognition;
-//     })();
+  // 音声認識開始
+  const startRecognition = () => {
+    const SpeechRecognitionClass = (() => {
+      const w = window as unknown as {
+        webkitSpeechRecognition?: { new (): ISpeechRecognition };
+        SpeechRecognition?: { new (): ISpeechRecognition };
+      };
+      return w.webkitSpeechRecognition || w.SpeechRecognition;
+    })();
 
-//     if (!SpeechRecognitionClass) {
-//       alert("お使いのブラウザは音声認識に対応していません");
-//       return;
-//     }
+    if (!SpeechRecognitionClass) {
+      alert("お使いのブラウザは音声認識に対応していません");
+      return;
+    }
 
-//     const recognition = new SpeechRecognitionClass();
-//     recognition.lang = "ja-JP";
-//     recognition.interimResults = false;
-//     recognition.maxAlternatives = 1;
+    const recognition = new SpeechRecognitionClass();
+    recognition.lang = "ja-JP";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
 
-//     recognition.onresult = (event: unknown) => {
-//       const e = event as {
-//         results: { 0: { 0: { transcript: string } } };
-//       };
-//       const transcript = e.results[0][0].transcript;
-//       setInput((prev) => prev + (prev ? " " : "") + transcript);
-//     };
+    recognition.onresult = (event: unknown) => {
+      const e = event as {
+        results: { 0: { 0: { transcript: string } } };
+      };
+      const transcript = e.results[0][0].transcript;
+      setInput((prev) => prev + (prev ? " " : "") + transcript);
+    };
 
-//     recognition.onend = () => {
-//       setIsRecording(false);
-//     };
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
 
-//     recognitionRef.current = recognition;
-//     recognition.start();
-//     setIsRecording(true);
-//   };
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsRecording(true);
+  };
 
   const handleSubmit = async () => {
     if (!input.trim() || isLoading) return;
@@ -189,7 +189,7 @@ interface ISpeechRecognition extends EventTarget {
               onKeyDown={handleKeyDown}
               placeholder={isLoading ? "AIが回答中です..." : "メッセージを入力...(Shift+Enterで改行)"}
             />
-            {/* <button
+            <button
               onClick={startRecognition}
               disabled={isLoading}
               className={`h-10 w-10 flex-shrink-0 rounded-md flex items-center justify-center transition-colors ${
@@ -198,7 +198,7 @@ interface ISpeechRecognition extends EventTarget {
               title="音声入力"
             >
               <MicrophoneIcon className="h-5 w-5" />
-            </button> */}
+            </button>
             <button
               onClick={handleSubmit}
               disabled={!input.trim() || isLoading}
