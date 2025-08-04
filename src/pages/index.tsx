@@ -73,7 +73,9 @@ const recognitionRef = useRef<ISpeechRecognition | null>(null);
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/chat", {
+      const res = await fetch(
+  "https://medical-bot-api-ghgpf6ghccdbhjcp.centralus-01.azurewebsites.net/api/chat",
+  {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
